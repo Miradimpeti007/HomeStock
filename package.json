@@ -18,6 +18,12 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "devDependencies": {
+    "@nuxt/image": "^2.0.0",
+    "@nuxt/scripts": "^0.13.2",
+    "@nuxt/test-utils": "^4.0.0",
+    "@pinia/nuxt": "^0.11.3",
+    "@vee-validate/nuxt": "^4.15.1",
+    "electron": "^40.6.0",
     "nodemon": "^3.1.11"
   },
   "dependencies": {
