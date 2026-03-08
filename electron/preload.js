@@ -5,10 +5,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
-    categories: {
-        getAll: () => ipcRenderer.invoke('categories:getAll'),
-        
-    },
     products: {
         getAll: () => ipcRenderer.invoke('products:getAll'),
        
