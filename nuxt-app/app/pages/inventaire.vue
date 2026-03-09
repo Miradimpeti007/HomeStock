@@ -1,13 +1,38 @@
 <script setup>
-import { ref, computed } from "vue"
-// Importation du store centralisé pour la synchronisation globale
+import { ref, computed, onMounted } from "vue"
+// Importation des composables Nuxt
 import { inventoryProducts, ruptureProducts, decreaseStock, deleteProduct, addProduct } from "~/composables/useStore"
 import "~/assets/css/style.css"
 
-// --- ÉTATS ---
+// --- ÉTATS RÉACTIFS NUXT ---
 const showModal = ref(false)
+const isLoading = ref(true) 
 const currentFilter = ref("Tous")
 const locations = ["Tous", "Frigo", "Congélateur", "Cellier", "Entretien"]
+
+// --- SYNCHRONISATION AVEC LE BACKEND ELECTRON ---
+const syncWithSQLite = async () => {
+  isLoading.value = true
+  try {
+    // Vérification du pont API définit dans le preload.js
+    if (window.api && window.api.products) {
+      // Appel de la méthode getAll du collègue via ipcRenderer
+      const data = await window.api.products.getAll()
+      
+      // On écrase les données du store par les vraies données SQLite
+      inventoryProducts.value = data
+      console.log("Nuxt : Données synchronisées avec SQLite")
+    }
+  } catch (error) {
+    console.error("Nuxt Error : Impossible de joindre la BDD", error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => {
+  syncWithSQLite()
+})
 
 const categories = [
   { id: 1, name: "PRODUITS LAITIERS" },
@@ -26,7 +51,7 @@ const form = ref({
   location: 'Frigo'
 })
 
-// --- LOGIQUE ---
+// --- LOGIQUE DE CALCUL ---
 const filteredProducts = computed(() => {
   if (currentFilter.value === "Tous") return inventoryProducts.value
   return inventoryProducts.value.filter(p => p.location === currentFilter.value)
@@ -37,6 +62,7 @@ function increaseStock(id) {
   if (!product) return
   let step = (product.unit === "L" || product.unit === "kg") ? 0.5 : 1
   product.quantity = parseFloat((product.quantity + step).toFixed(2))
+  // À NOTER : Pour l'instant, ton collègue n'a pas exposé de méthode 'update'
 }
 
 const handleSave = () => {
@@ -45,6 +71,7 @@ const handleSave = () => {
     id: Date.now(),
     category: categories.find(c => c.id === form.value.categoryId)?.name || "Générique"
   }
+  // Ajout local (en attendant que ton collègue ajoute 'products.create')
   addProduct(newProduct)
   showModal.value = false
   form.value = { name: '', categoryId: '', quantity: 0, unit: 'L', expirationDate: '', location: 'Frigo' }
@@ -102,7 +129,8 @@ const getExpirationText = (date) => {
       <header class="topbar">
         <div class="header-titles">
           <h1>Inventaire</h1>
-          <p>Stock actif de la maison</p>
+          <p v-if="isLoading">Chargement des données SQLite...</p>
+          <p v-else>Stock actif de la maison</p>
         </div>
         <button class="btn-primary" @click="showModal = true">+ Nouveau Produit</button>
       </header>
@@ -116,7 +144,11 @@ const getExpirationText = (date) => {
       </div>
 
       <div class="inventory-card">
-        <div class="inventory-table">
+        <div v-if="filteredProducts.length === 0 && !isLoading" style="padding: 20px; text-align: center; color: #666;">
+          Aucun produit trouvé dans cette catégorie.
+        </div>
+
+        <div v-else class="inventory-table">
           <div class="table-header">
             <span>DESCRIPTION</span>
             <span>CATÉGORIE</span>
@@ -128,10 +160,10 @@ const getExpirationText = (date) => {
 
           <div v-for="p in filteredProducts" :key="p.id" class="inventory-row">
             <div class="col-desc item-detail">
-              <div class="item-icon">🥛</div>
+              <div class="item-icon">📦</div>
               <div class="item-text">
                 <span class="item-name">{{ p.name }}</span>
-                <span class="item-ref">REF-{{ p.id }}X</span>
+                <span class="item-ref">REF-{{ p.id }}</span>
               </div>
             </div>
             <div class="col-cat"><span class="pill category">{{ p.category }}</span></div>
@@ -157,21 +189,19 @@ const getExpirationText = (date) => {
         </div>
       </div>
     </main>
-
+    
     <Transition name="fade">
       <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
         <div class="modal-container">
           <button class="close-modal-btn" @click="showModal = false">
             <span class="close-icon-shape"></span>
           </button>
-
           <header class="modal-header">
             <div class="header-text">
               <h2>Nouveau Produit</h2>
               <p>Ajoutez un article à votre inventaire intelligent.</p>
             </div>
           </header>
-
           <form @submit.prevent="handleSave" class="modal-form">
             <div class="form-group">
               <label>NOM DU PRODUIT</label>
