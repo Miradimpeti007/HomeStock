@@ -1,6 +1,9 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
+<<<<<<< HEAD
 const { registerAllIpc } = require('./ipc/index');
+=======
+>>>>>>> walidTest
 
 let mainWindow;
 
@@ -18,6 +21,7 @@ function createWindow() {
 
     mainWindow.maximize();
     mainWindow.show();
+<<<<<<< HEAD
     mainWindow.webContents.openDevTools();
 
     mainWindow.loadFile(path.join(__dirname, '../test/dashboard.html'));
@@ -26,6 +30,13 @@ function createWindow() {
 app.whenReady().then(() => {
 
     registerAllIpc();
+=======
+
+    mainWindow.loadURL('http://localhost:3000');
+}
+
+app.whenReady().then(() => {
+>>>>>>> walidTest
     createWindow();
 
     app.on('activate', () => {

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Nuxt Starter Template
 
 [![Nuxt UI](https://img.shields.io/badge/Made%20with-Nuxt%20UI-00DC82?logo=nuxt&labelColor=020420)](https://ui.nuxt.com)
@@ -33,6 +34,28 @@ Make sure to install the dependencies:
 
 ```bash
 pnpm install
+=======
+# Nuxt Minimal Starter
+
+Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+
+## Setup
+
+Make sure to install dependencies:
+
+```bash
+# npm
+npm install
+
+# pnpm
+pnpm install
+
+# yarn
+yarn install
+
+# bun
+bun install
+>>>>>>> walidTest
 ```
 
 ## Development Server
@@ -40,7 +63,21 @@ pnpm install
 Start the development server on `http://localhost:3000`:
 
 ```bash
+<<<<<<< HEAD
 pnpm dev
+=======
+# npm
+npm run dev
+
+# pnpm
+pnpm dev
+
+# yarn
+yarn dev
+
+# bun
+bun run dev
+>>>>>>> walidTest
 ```
 
 ## Production
@@ -48,13 +85,41 @@ pnpm dev
 Build the application for production:
 
 ```bash
+<<<<<<< HEAD
 pnpm build
+=======
+# npm
+npm run build
+
+# pnpm
+pnpm build
+
+# yarn
+yarn build
+
+# bun
+bun run build
+>>>>>>> walidTest
 ```
 
 Locally preview production build:
 
 ```bash
+<<<<<<< HEAD
 pnpm preview
+=======
+# npm
+npm run preview
+
+# pnpm
+pnpm preview
+
+# yarn
+yarn preview
+
+# bun
+bun run preview
+>>>>>>> walidTest
 ```
 
 Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
