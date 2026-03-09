@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "dotenv": "^17.3.1",
+    "electron-log": "^5.4.3",
     "sequelize": "^6.37.7",
     "sequelize-auto": "^0.8.8",
     "sequelize-cli": "^6.6.5",

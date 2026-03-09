@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>HomeStock - Liste de courses</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="courses">
+    <div class="app-layout">
+        <aside class="sidebar">
+            <div class="logo-container">
+                <div class="logo-icon">📦</div>
+                <span class="logo-text">HomeStock</span>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <span class="icon">⊞</span>
+                    <span>Tableau de bord</span>
+                </a>
+                <a href="inventaire.html" class="nav-item">
+                    <span class="icon">📋</span>
+                    <span>Inventaire</span>
+                </a>
+                <a href="courses.html" class="nav-item active">
+                    <span class="icon">🛒</span>
+                    <span>Liste de courses</span>
+                    <span class="badge" id="course-badge-sidebar">0</span>
+                </a>
+            </nav>
+            <div class="sidebar-section-title">SYSTÈME</div>
+            <nav class="sidebar-nav">
+                <a href="configuration.html" class="nav-item">
+                    <span class="icon">⚙</span>
+                    <span>Configuration</span>
+                </a>
+            </nav>
+        </aside>
+        <main class="main-content">
+            <header class="topbar">
+                <div class="header-text">
+                    <h1>Liste de courses</h1>
+                    <p>Articles à racheter pour réapprovisionner le stock</p>
+                </div>
+                <button class="primary-btn" id="open-modal-btn">+ Ajouter manuellement</button>
+            </header>
+            <section class="inventory-container">
+                <div class="inventory-header">
+                    <span>ARTICLE</span>
+                    <span>CATÉGORIE</span>
+                    <span>UNITÉ</span>
+                    <span>QUANTITÉ</span>
+                    <span>ACTIONS</span>
+                </div>
+                <div id="shopping-list"></div>
+            </section>
+        </main>
+    </div>
+    <div id="modal-overlay" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h2>Ajouter aux courses</h2>
+                    <p>Préparez votre prochain réapprovisionnement</p>
+                </div>
+                <button id="close-modal" class="close-btn">&times;</button>
+            </div>
+            <form id="add-course-form">
+                <div class="form-group">
+                    <label>NOM DE L'ARTICLE</label>
+                    <input type="text" id="c-name" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>CATÉGORIE</label>
+                        <select id="c-category" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label>UNITÉ</label>
+                        <select id="c-unit" required>
+                            <option value="unite">unite</option>
+                            <option value="kg">kg</option>
+                            <option value="L">L</option>
+                            <option value="ml">ml</option>
+                            <option value="mg">mg</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>QUANTITÉ À ACHETER</label>
+                    <input type="number" id="c-quantity" step="0.1" value="1" required>
+                </div>
+                <button type="submit" class="submit-btn">Ajouter</button>
+            </form>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
