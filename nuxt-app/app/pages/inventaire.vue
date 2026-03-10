@@ -1,38 +1,14 @@
 <script setup>
 import { ref, computed, onMounted } from "vue"
-// Importation des composables Nuxt
-import { inventoryProducts, ruptureProducts, decreaseStock, deleteProduct, addProduct } from "~/composables/useStore"
+// Importation du store centralisé
+import { inventoryProducts, ruptureProducts } from "~/composables/useStore"
 import "~/assets/css/style.css"
 
-// --- ÉTATS RÉACTIFS NUXT ---
+// --- ÉTATS ---
 const showModal = ref(false)
-const isLoading = ref(true) 
+const isLoading = ref(true)
 const currentFilter = ref("Tous")
 const locations = ["Tous", "Frigo", "Congélateur", "Cellier", "Entretien"]
-
-// --- SYNCHRONISATION AVEC LE BACKEND ELECTRON ---
-const syncWithSQLite = async () => {
-  isLoading.value = true
-  try {
-    // Vérification du pont API définit dans le preload.js
-    if (window.api && window.api.products) {
-      // Appel de la méthode getAll du collègue via ipcRenderer
-      const data = await window.api.products.getAll()
-      
-      // On écrase les données du store par les vraies données SQLite
-      inventoryProducts.value = data
-      console.log("Nuxt : Données synchronisées avec SQLite")
-    }
-  } catch (error) {
-    console.error("Nuxt Error : Impossible de joindre la BDD", error)
-  } finally {
-    isLoading.value = false
-  }
-}
-
-onMounted(() => {
-  syncWithSQLite()
-})
 
 const categories = [
   { id: 1, name: "PRODUITS LAITIERS" },
@@ -51,31 +27,80 @@ const form = ref({
   location: 'Frigo'
 })
 
-// --- LOGIQUE DE CALCUL ---
+// --- SYNCHRONISATION SQLITE ---
+
+// Charger les produits au démarrage
+const syncWithSQLite = async () => {
+  isLoading.value = true
+  try {
+    if (window.api && window.api.products) {
+      const data = await window.api.products.getAll()
+      inventoryProducts.value = data
+    }
+  } catch (error) {
+    console.error("Erreur de chargement SQLite :", error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => {
+  syncWithSQLite()
+})
+
+// --- LOGIQUE CRUD (Utilisant les méthodes de ton collègue) ---
+
+const handleSave = async () => {
+  const productData = {
+    ...form.value,
+    category: categories.find(c => c.id === form.value.categoryId)?.name || "Générique"
+  }
+
+  try {
+    if (window.api && window.api.products.create) {
+      await window.api.products.create(productData)
+      await syncWithSQLite() // Rafraîchir la liste
+      showModal.value = false
+      // Reset du formulaire
+      form.value = { name: '', categoryId: '', quantity: 0, unit: 'L', expirationDate: '', location: 'Frigo' }
+    }
+  } catch (error) {
+    console.error("Erreur de création :", error)
+  }
+}
+
+const handleUpdateQty = async (id, step) => {
+  try {
+    if (window.api && window.api.products.updateQty) {
+      // Ton collègue attend un objet { id, change }
+      await window.api.products.updateQty({ id, change: step })
+      await syncWithSQLite()
+    }
+  } catch (error) {
+    console.error("Erreur de mise à jour stock :", error)
+  }
+}
+
+const handleDelete = async (id) => {
+  if (confirm("Supprimer définitivement ce produit ?")) {
+    try {
+      if (window.api && window.api.products.delete) {
+        // Ton collègue attend un objet { id }
+        await window.api.products.delete({ id })
+        await syncWithSQLite()
+      }
+    } catch (error) {
+      console.error("Erreur de suppression :", error)
+    }
+  }
+}
+
+// --- LOGIQUE AFFICHAGE ---
+
 const filteredProducts = computed(() => {
   if (currentFilter.value === "Tous") return inventoryProducts.value
   return inventoryProducts.value.filter(p => p.location === currentFilter.value)
 })
-
-function increaseStock(id) {
-  const product = inventoryProducts.value.find(p => p.id === id)
-  if (!product) return
-  let step = (product.unit === "L" || product.unit === "kg") ? 0.5 : 1
-  product.quantity = parseFloat((product.quantity + step).toFixed(2))
-  // À NOTER : Pour l'instant, ton collègue n'a pas exposé de méthode 'update'
-}
-
-const handleSave = () => {
-  const newProduct = {
-    ...form.value,
-    id: Date.now(),
-    category: categories.find(c => c.id === form.value.categoryId)?.name || "Générique"
-  }
-  // Ajout local (en attendant que ton collègue ajoute 'products.create')
-  addProduct(newProduct)
-  showModal.value = false
-  form.value = { name: '', categoryId: '', quantity: 0, unit: 'L', expirationDate: '', location: 'Frigo' }
-}
 
 const getExpirationStatus = (date) => {
   if (!date) return "none"
@@ -129,7 +154,7 @@ const getExpirationText = (date) => {
       <header class="topbar">
         <div class="header-titles">
           <h1>Inventaire</h1>
-          <p v-if="isLoading">Chargement des données SQLite...</p>
+          <p v-if="isLoading">Chargement de la base SQLite...</p>
           <p v-else>Stock actif de la maison</p>
         </div>
         <button class="btn-primary" @click="showModal = true">+ Nouveau Produit</button>
@@ -144,11 +169,7 @@ const getExpirationText = (date) => {
       </div>
 
       <div class="inventory-card">
-        <div v-if="filteredProducts.length === 0 && !isLoading" style="padding: 20px; text-align: center; color: #666;">
-          Aucun produit trouvé dans cette catégorie.
-        </div>
-
-        <div v-else class="inventory-table">
+        <div class="inventory-table">
           <div class="table-header">
             <span>DESCRIPTION</span>
             <span>CATÉGORIE</span>
@@ -169,9 +190,9 @@ const getExpirationText = (date) => {
             <div class="col-cat"><span class="pill category">{{ p.category }}</span></div>
             <div class="col-stock">
               <div class="stock-control">
-                <button class="stock-btn" @click="decreaseStock(p.id)">-</button>
+                <button class="stock-btn" @click="handleUpdateQty(p.id, -1)">-</button>
                 <span class="stock-display">{{ p.quantity }} <small>{{ p.unit }}</small></span>
-                <button class="stock-btn" @click="increaseStock(p.id)">+</button>
+                <button class="stock-btn" @click="handleUpdateQty(p.id, 1)">+</button>
               </div>
             </div>
             <div class="col-loc"><span class="pill location">{{ p.location }}</span></div>
@@ -183,25 +204,27 @@ const getExpirationText = (date) => {
             </div>
             <div class="col-actions">
               <button class="action-btn">📝</button>
-              <button class="action-btn delete" @click="deleteProduct(p.id)">🗑️</button>
+              <button class="action-btn delete" @click="handleDelete(p.id)">🗑️</button>
             </div>
           </div>
         </div>
       </div>
     </main>
-    
+
     <Transition name="fade">
       <div v-if="showModal" class="modal-overlay" @click.self="showModal = false">
         <div class="modal-container">
           <button class="close-modal-btn" @click="showModal = false">
             <span class="close-icon-shape"></span>
           </button>
+
           <header class="modal-header">
             <div class="header-text">
               <h2>Nouveau Produit</h2>
               <p>Ajoutez un article à votre inventaire intelligent.</p>
             </div>
           </header>
+
           <form @submit.prevent="handleSave" class="modal-form">
             <div class="form-group">
               <label>NOM DU PRODUIT</label>

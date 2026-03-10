@@ -1,0 +1,37 @@
+{
+  "name": "homestock",
+  "version": "1.0.0",
+  "description": "Logiciel de gestion ",
+  "homepage": "https://github.com/Miradimpeti007/HomeStock#readme",
+  "bugs": {
+    "url": "https://github.com/Miradimpeti007/HomeStock/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Miradimpeti007/HomeStock.git"
+  },
+  "license": "ISC",
+  "author": "Miradi Mpeti Eboma",
+  "type": "commonjs",
+  "main": "electron/server.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "@nuxt/image": "^2.0.0",
+    "@nuxt/scripts": "^0.13.2",
+    "@nuxt/test-utils": "^4.0.0",
+    "@pinia/nuxt": "^0.11.3",
+    "@vee-validate/nuxt": "^4.15.1",
+    "electron": "^40.6.0",
+    "nodemon": "^3.1.11"
+  },
+  "dependencies": {
+    "dotenv": "^17.3.1",
+    "sequelize": "^6.37.7",
+    "sequelize-auto": "^0.8.8",
+    "sequelize-cli": "^6.6.5",
+    "sqlite3": "^5.1.7"
+  }
+}
