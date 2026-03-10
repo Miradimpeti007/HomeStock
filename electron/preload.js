@@ -45,5 +45,32 @@ contextBridge.exposeInMainWorld('api', {
          * @returns {Promise<Object>}
          */
         delete: (deleteData) => ipcRenderer.invoke('products:delete', deleteData)
+    },
+
+    config: {
+        /**
+         * @description Récupère toutes les catégories (pour les menus déroulants).
+         */
+        getAllCategories: () => ipcRenderer.invoke('categories:getAll'),
+
+        /**
+         * @description Récupère tous les lieux de stockage.
+         */
+        getAllLocations: () => ipcRenderer.invoke('locations:getAll'),
+
+        /**
+         * @description Ajoute un nouvel emplacement (ex: Garage, Cave).
+         */
+        createLocation: (locationData) => ipcRenderer.invoke('locations:create', locationData),
+
+        /**
+         * @description Renomme un emplacement existant.
+         */
+        updateLocation: (locationData) => ipcRenderer.invoke('locations:update', locationData),
+
+        /**
+         * @description Supprime un emplacement (si vide).
+         */
+        deleteLocation: (idData) => ipcRenderer.invoke('locations:delete', idData)
     }
 });
