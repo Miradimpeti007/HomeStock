@@ -6,6 +6,7 @@
 
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
+const { registerAllIpc } = require('./ipc/index');
 
 /**
  * @description Détermine si l'application tourne en mode développement.
@@ -36,7 +37,7 @@ function createWindow() {
      * En développement : utilise le serveur HMR de Nuxt (Vite).
      * En production : charge le build statique exporté.
      */
-    if (!isDev) { //mmeTemp
+    if (isDev) {
         mainWindow.loadURL('http://localhost:3000');
         mainWindow.webContents.openDevTools();
     } else {
