@@ -45,7 +45,7 @@ L'application permet de :
 
 ## 🎨 Conception & Design
 
-> **[Voir la maquette sur Figma](#)**
+> **[Voir la maquette sur Figma](https://sepia-build-20535071.figma.site)**
 
 L'interface suit un design **dark mode** minimaliste inspiré des applications SaaS modernes.
 
