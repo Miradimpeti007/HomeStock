@@ -72,5 +72,27 @@ contextBridge.exposeInMainWorld('api', {
          * @description Supprime un emplacement (si vide).
          */
         deleteLocation: (idData) => ipcRenderer.invoke('locations:delete', idData)
+    },
+
+    history: {
+        /**
+         * @description Récupère l'historique de consommation avec filtres et pagination.
+         * @param {Object} filters - Filtres (wasThrownAway, categoryId, locationId, date).
+         * @returns {Promise<Object>}
+         */
+        getAll: (filters) => ipcRenderer.invoke('history:getAll', filters),
+
+        /**
+         * @description Supprime une entrée spécifique de l'historique.
+         * @param {Object} idData - Contient l'ID de l'entrée à supprimer.
+         * @returns {Promise<Object>}
+         */
+        deleteItem: (idData) => ipcRenderer.invoke('history:deleteItem', idData),
+
+        /**
+         * @description Efface l'intégralité de l'historique de consommation.
+         * @returns {Promise<Object>}
+         */
+        clear: () => ipcRenderer.invoke('history:clear')
     }
 });
