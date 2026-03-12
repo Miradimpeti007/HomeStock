@@ -1,11 +1,12 @@
 <script setup>
-import { ref, computed } from "vue"
-// Importation du store centralisé pour la synchronisation globale
-import { inventoryProducts, ruptureProducts, decreaseStock, deleteProduct, addProduct } from "~/composables/useStore"
+import { ref, computed, onMounted } from "vue"
+// Importation du store centralisé
+import { inventoryProducts, ruptureProducts } from "~/composables/useStore"
 import "~/assets/css/style.css"
 
 // --- ÉTATS ---
 const showModal = ref(false)
+const isLoading = ref(true)
 const currentFilter = ref("Tous")
 const locations = ["Tous", "Frigo", "Congélateur", "Cellier", "Entretien"]
 
@@ -26,29 +27,80 @@ const form = ref({
   location: 'Frigo'
 })
 
-// --- LOGIQUE ---
+// --- SYNCHRONISATION SQLITE ---
+
+// Charger les produits au démarrage
+const syncWithSQLite = async () => {
+  isLoading.value = true
+  try {
+    if (window.api && window.api.products) {
+      const data = await window.api.products.getAll()
+      inventoryProducts.value = data
+    }
+  } catch (error) {
+    console.error("Erreur de chargement SQLite :", error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+onMounted(() => {
+  syncWithSQLite()
+})
+
+// --- LOGIQUE CRUD (Utilisant les méthodes de ton collègue) ---
+
+const handleSave = async () => {
+  const productData = {
+    ...form.value,
+    category: categories.find(c => c.id === form.value.categoryId)?.name || "Générique"
+  }
+
+  try {
+    if (window.api && window.api.products.create) {
+      await window.api.products.create(productData)
+      await syncWithSQLite() // Rafraîchir la liste
+      showModal.value = false
+      // Reset du formulaire
+      form.value = { name: '', categoryId: '', quantity: 0, unit: 'L', expirationDate: '', location: 'Frigo' }
+    }
+  } catch (error) {
+    console.error("Erreur de création :", error)
+  }
+}
+
+const handleUpdateQty = async (id, step) => {
+  try {
+    if (window.api && window.api.products.updateQty) {
+      // Ton collègue attend un objet { id, change }
+      await window.api.products.updateQty({ id, change: step })
+      await syncWithSQLite()
+    }
+  } catch (error) {
+    console.error("Erreur de mise à jour stock :", error)
+  }
+}
+
+const handleDelete = async (id) => {
+  if (confirm("Supprimer définitivement ce produit ?")) {
+    try {
+      if (window.api && window.api.products.delete) {
+        // Ton collègue attend un objet { id }
+        await window.api.products.delete({ id })
+        await syncWithSQLite()
+      }
+    } catch (error) {
+      console.error("Erreur de suppression :", error)
+    }
+  }
+}
+
+// --- LOGIQUE AFFICHAGE ---
+
 const filteredProducts = computed(() => {
   if (currentFilter.value === "Tous") return inventoryProducts.value
   return inventoryProducts.value.filter(p => p.location === currentFilter.value)
 })
-
-function increaseStock(id) {
-  const product = inventoryProducts.value.find(p => p.id === id)
-  if (!product) return
-  let step = (product.unit === "L" || product.unit === "kg") ? 0.5 : 1
-  product.quantity = parseFloat((product.quantity + step).toFixed(2))
-}
-
-const handleSave = () => {
-  const newProduct = {
-    ...form.value,
-    id: Date.now(),
-    category: categories.find(c => c.id === form.value.categoryId)?.name || "Générique"
-  }
-  addProduct(newProduct)
-  showModal.value = false
-  form.value = { name: '', categoryId: '', quantity: 0, unit: 'L', expirationDate: '', location: 'Frigo' }
-}
 
 const getExpirationStatus = (date) => {
   if (!date) return "none"
@@ -102,7 +154,8 @@ const getExpirationText = (date) => {
       <header class="topbar">
         <div class="header-titles">
           <h1>Inventaire</h1>
-          <p>Stock actif de la maison</p>
+          <p v-if="isLoading">Chargement de la base SQLite...</p>
+          <p v-else>Stock actif de la maison</p>
         </div>
         <button class="btn-primary" @click="showModal = true">+ Nouveau Produit</button>
       </header>
@@ -128,18 +181,18 @@ const getExpirationText = (date) => {
 
           <div v-for="p in filteredProducts" :key="p.id" class="inventory-row">
             <div class="col-desc item-detail">
-              <div class="item-icon">🥛</div>
+              <div class="item-icon">📦</div>
               <div class="item-text">
                 <span class="item-name">{{ p.name }}</span>
-                <span class="item-ref">REF-{{ p.id }}X</span>
+                <span class="item-ref">REF-{{ p.id }}</span>
               </div>
             </div>
             <div class="col-cat"><span class="pill category">{{ p.category }}</span></div>
             <div class="col-stock">
               <div class="stock-control">
-                <button class="stock-btn" @click="decreaseStock(p.id)">-</button>
+                <button class="stock-btn" @click="handleUpdateQty(p.id, -1)">-</button>
                 <span class="stock-display">{{ p.quantity }} <small>{{ p.unit }}</small></span>
-                <button class="stock-btn" @click="increaseStock(p.id)">+</button>
+                <button class="stock-btn" @click="handleUpdateQty(p.id, 1)">+</button>
               </div>
             </div>
             <div class="col-loc"><span class="pill location">{{ p.location }}</span></div>
@@ -151,7 +204,7 @@ const getExpirationText = (date) => {
             </div>
             <div class="col-actions">
               <button class="action-btn">📝</button>
-              <button class="action-btn delete" @click="deleteProduct(p.id)">🗑️</button>
+              <button class="action-btn delete" @click="handleDelete(p.id)">🗑️</button>
             </div>
           </div>
         </div>
