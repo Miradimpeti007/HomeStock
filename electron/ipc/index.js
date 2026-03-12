@@ -2,14 +2,15 @@
  * @module ipc/index
  * @description Centralizes all IPC registrations to keep main.js clean.
  */
-// const { registerCategoryIpc } = require('./category.ipc');
+
 const { registerProductIpc } = require('./product.ipc');
 const { registerConfigIpc } = require('./config.ipc');
+const { registerHistoryIpc } = require('./history.ipc');
 
 function registerAllIpc() {
-    // registerCategoryIpc();
     registerProductIpc();
     registerConfigIpc();
+    registerHistoryIpc();
 }
 
 module.exports = {
