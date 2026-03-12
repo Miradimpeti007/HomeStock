@@ -78,11 +78,22 @@ async function getAllProducts(_, filters = {}) {
             offset: offset
         });
 
+        let totalPages = Math.ceil(count / limit);
+        if(totalPages === 0 || currentPage > totalPages) totalPages = 1; // Assurer au moins une page même si aucun résultat
+        let lastPage=false;
+
+        if(currentPage === totalPages) {
+            lastPage=true;
+        }
+
+
+
         return ResponseHandler.success({
             totalItems: count,
             items: rows.map(p => p.toJSON()),
-            totalPages: Math.ceil(count / limit),
-            currentPage: currentPage
+            totalPages: totalPages,
+            currentPage: currentPage,
+            lastPage: lastPage
         });
 
     } catch (error) {
