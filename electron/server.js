@@ -37,7 +37,7 @@ function createWindow() {
      * En développement : utilise le serveur HMR de Nuxt (Vite).
      * En production : charge le build statique exporté.
      */
-    if (isDev) {
+    if (!isDev) {
         mainWindow.loadURL('http://localhost:3000');
         mainWindow.webContents.openDevTools();
     } else {

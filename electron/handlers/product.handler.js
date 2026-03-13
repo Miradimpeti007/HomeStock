@@ -56,7 +56,7 @@ async function getAllProducts(_, filters = {}) {
                 if (val === 'safe') return { [Op.gt]: inThreeDays };
                 return null;
         }
-};
+        };
 
         const where = QueryHelper.sanitizeFilters(filters, productMapping);
         
