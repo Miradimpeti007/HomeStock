@@ -94,5 +94,49 @@ contextBridge.exposeInMainWorld('api', {
          * @returns {Promise<Object>}
          */
         clear: () => ipcRenderer.invoke('history:clear')
+    },
+
+    shopping: {
+        /**
+         * Récupère les articles de la liste.
+         * @param {Object} filters - Exemple: { isCompleted: false }
+         */
+        getList: (filters) => ipcRenderer.invoke('shopping:get-list', filters),
+
+        /**
+         * Ajoute un article à la liste.
+         * @param {Object} itemData - { name, quantity, unit, linkedProductId }
+         */
+        add: (itemData) => ipcRenderer.invoke('shopping:add-item', itemData),
+
+        /**
+         * Modifie la quantité d'un article.
+         * @param {number} id - ID de l'article dans ShoppingItems
+         * @param {number} quantity - Nouvelle valeur numérique
+         */
+        updateQty: (id, quantity) => ipcRenderer.invoke('shopping:update-qty', { id, quantity }),
+
+        /**
+         * Alterne l'état de complétion d'un article.
+         */
+        toggleCompletion: (id) => ipcRenderer.invoke('shopping:toggle-completion', { id }),
+
+        /**
+         * Supprime un article de la liste.
+         */
+        delete: (id) => ipcRenderer.invoke('shopping:delete-item', { id }),
+
+        /**
+         * Supprime tous les articles de la liste.
+         */
+        clearAll: () => ipcRenderer.invoke('shopping:clear-all'),
+
+        /**
+         * Valide les articles sélectionnés pour les transférer dans l'inventaire.
+         * @param {Array<number>} itemIds - Liste des IDs à traiter
+         */
+        validateCart: (itemIds) => ipcRenderer.invoke('shopping:validate-cart', { itemIds })
     }
+
+    
 });
