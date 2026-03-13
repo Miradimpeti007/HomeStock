@@ -17,6 +17,7 @@ const historyFilterMapping = {
     // Filtre de date : attend un objet { start, end }
     consumedDate: (val) => {
         if (!val || !val.start || !val.end) return null;
+        if(val.start > val.end) return null; // Validation basique pour éviter les plages inversées
         return { [Op.between]: [new Date(val.start), new Date(val.end)] };
     }
 };
