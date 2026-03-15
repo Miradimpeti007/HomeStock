@@ -1,8 +1,31 @@
 <script setup>
-import { computed } from 'vue'
-import { ruptureProducts } from "~/composables/useStore"
+import { ref, onMounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
-const ruptureCount = computed(() => ruptureProducts.value?.length || 0)
+const route = useRoute()
+const shoppingCount = ref(0)
+
+// La fonction qui appelle ta méthode getShoppingList via le preload
+const fetchShoppingCount = async () => {
+  try {
+    const res = await window.api.shopping.getList({ isCompleted: false })
+    if (res?.success) {
+      shoppingCount.value = res.data.length
+    }
+  } catch (error) {
+    console.error("Erreur de synchronisation du badge :", error)
+  }
+}
+
+// Premier chargement
+onMounted(() => {
+  fetchShoppingCount()
+})
+
+// Mise à jour automatique quand tu navigues entre les pages
+watch(() => route.path, () => {
+  fetchShoppingCount()
+})
 </script>
 
 <template>
@@ -42,7 +65,7 @@ const ruptureCount = computed(() => ruptureProducts.value?.length || 0)
         </NuxtLink>
         <NuxtLink to="/courses" class="nav-item" exact-active-class="active">
           <span class="nav-icon">🛒</span><span>Liste de courses</span>
-          <span v-if="ruptureCount > 0" class="badge-count">{{ ruptureCount }}</span>
+          <span v-if="shoppingCount > 0" class="badge-count">{{ shoppingCount }}</span>
         </NuxtLink>
         <NuxtLink to="/historique" class="nav-item" exact-active-class="active">
           <span class="nav-icon">🕒</span><span>Historique</span>

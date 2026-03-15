@@ -14,6 +14,7 @@ const shoppingAddMapping = {
     name: (val) => (typeof val === 'string' && val.trim() !== '' ? val.trim() : null),
     quantity: (val) => (isNaN(parseFloat(val)) || parseFloat(val) < 0 ? null : parseFloat(val)),
     unit: (val) => (['L', 'kg', 'ml', 'mg', 'unite'].includes(val) ? val : 'unite'),
+    categoryId: (val) => (isNaN(parseInt(val, 10)) ? null : parseInt(val, 10)),
 };
 
 const shoppingQtyUpdateMapping = {
@@ -61,7 +62,7 @@ async function addShoppingItem(_, rawData) {
 
         const item = await db.ShoppingItems.create({
             ...data,
-            categoryId: defaultCategory ? defaultCategory.id : 12,
+            categoryId: data.categoryId || defaultCategory?.id || 12,
             linkedProductId:null, // Fallback à 12 si la catégorie n'existe pas
             isCompleted: false
         });
@@ -71,7 +72,7 @@ async function addShoppingItem(_, rawData) {
         return ResponseHandler.error(error, 'ADD_ERROR', "Échec de l'ajout à la liste de courses.");
     }
 }
-
+ 
 /**
  * Met à jour exclusivement la quantité d'un article existant dans la liste.
  */
@@ -174,10 +175,11 @@ async function validateCartToInventory(_, { itemIds }) {
                     name: item.name,
                     quantity: item.quantity,
                     unit: item.unit,
-                    categoryId: defaultCat ? defaultCat.id : 12, // Fallback à 12 si la catégorie n'existe pas
+                    categoryId: item.categoryId || defaultCat?.id || 12, // Fallback à 12 si la catégorie n'existe pas
                     locationId: defaultLoc ? defaultLoc.id : 8, // Fallback à 8 si le lieu n'existe pas
                     minQuantity: 0,
                     autoRefill: false,
+                    expirationDate: new Date(),
                     createdAt: new Date(),
                     updatedAt: new Date()
                 }, { transaction });

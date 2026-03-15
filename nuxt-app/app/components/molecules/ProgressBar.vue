@@ -1,14 +1,8 @@
 <script setup>
 import { computed } from 'vue'
 
-const props = defineProps({
-  total: { type: Number, required: true },
-  completed: { type: Number, required: true }
-})
-
-const progressPercentage = computed(() => {
-  return props.total === 0 ? 0 : Math.round((props.completed / props.total) * 100)
-})
+const props = defineProps({ total: Number, completed: Number })
+const progressPercentage = computed(() => props.total === 0 ? 0 : Math.round((props.completed / props.total) * 100))
 </script>
 
 <template>
@@ -16,7 +10,7 @@ const progressPercentage = computed(() => {
     <div class="progression-info">
       <div class="progression-text">
         <h3>Progression</h3>
-        <p>{{ completed }} sur {{ total }} articles complétés</p>
+        <p>{{ completed }} sur {{ total }} articles achetés</p>
       </div>
       <div class="progression-value">{{ progressPercentage }}%</div>
     </div>
