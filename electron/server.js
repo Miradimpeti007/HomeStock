@@ -7,6 +7,10 @@
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
 const { registerAllIpc } = require('./ipc/index');
+const WatcherService = require('./services/watcher.service');
+const { Notification } = require('electron');
+
+
 
 /**
  * @description Détermine si l'application tourne en mode développement.
@@ -60,13 +64,14 @@ function createWindow() {
         mainWindow = null;
     });
 }
-
+app.setAppUserModelId("com.homestock.app");
 /**
  * @description Cycle de vie : Initialisation de l'application.
  */
 app.whenReady().then(() => {
     registerAllIpc();
     createWindow();
+    WatcherService.initScheduler();
 
     /**
      * @description Spécificité macOS : Recrée une fenêtre si l'icône du Dock est cliquée

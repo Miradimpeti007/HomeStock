@@ -136,6 +136,21 @@ contextBridge.exposeInMainWorld('api', {
          * @param {Array<number>} itemIds - Liste des IDs à traiter
          */
         validateCart: (itemIds) => ipcRenderer.invoke('shopping:validate-cart', { itemIds })
+    },
+
+    settings: {
+        /**
+         * @description Récupère tous les réglages sous forme d'objet { cle: valeur }.
+         * @returns {Promise<Object>}
+         */
+        getAll: () => ipcRenderer.invoke('settings:get-all'),
+
+        /**
+         * @description Met à jour un réglage spécifique.
+         * @param {Object} settingData - Contient { key, value }.
+         * @returns {Promise<Object>}
+         */
+        update: (settingData) => ipcRenderer.invoke('settings:update', settingData)
     }
 
     
