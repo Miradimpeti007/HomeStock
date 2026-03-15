@@ -1,3 +1,6 @@
+
+const WatcherService = require('../services/watcher.service');
+
 /**
  * @module handlers/product.handler
  */
@@ -110,6 +113,9 @@ async function createProduct(_, rawData) {
         if (error) return ResponseHandler.error(null, 'VALIDATION_FAILED', error);
 
         const product = await db.Products.create(data);
+
+        WatcherService.checkAll(); // Vérification immédiate après création pour les alertes
+        
         return ResponseHandler.success(product.toJSON());
     } catch (err) {
         return ResponseHandler.error(err, 'CREATE_ERROR', "Échec technique de création.");
@@ -199,6 +205,9 @@ async function updateProduct(_, rawData) {
         }
 
         await transaction.commit();
+
+        WatcherService.checkAll();
+
         return ResponseHandler.success(product.toJSON());
 
     } catch (err) {
@@ -233,8 +242,28 @@ async function deleteProduct(_, rawData) {
             locationId: product.locationId
         }, { transaction });
 
+        if(product.autoRefill) {
+
+            await db.ShoppingItems.findOrCreate({
+                where: { linkedProductId: product.id, isCompleted: false },
+                defaults: {
+                    name: product.name,
+                    quantity: 1,
+                    unit: product.unit,
+                    isCompleted: false,
+                    categoryId: product.categoryId,
+                    linkedProductId: product.id
+                },
+                transaction
+                
+            });
+        }
+
+
         await product.destroy({ transaction });
         await transaction.commit();
+
+        WatcherService.checkAll();
 
         return ResponseHandler.success({ id: data.id, archived: true });
     } catch (err) {
@@ -316,6 +345,9 @@ async function updateQuantity(_, rawData) {
         }
 
         await transaction.commit();
+
+        WatcherService.checkAll();
+        
         return ResponseHandler.success({ id: product.id, quantity: newQuantity, needsRefill });
 
     } catch (err) {
