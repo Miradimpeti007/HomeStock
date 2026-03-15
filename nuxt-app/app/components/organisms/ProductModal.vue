@@ -5,46 +5,85 @@ const props = defineProps({
   show: Boolean,
   categories: Array,
   locations: Array,
-  productToEdit: Object // Reçu depuis la page inventaire quand on clique sur le crayon
+  productToEdit: Object
 })
 
-const emit = defineEmits(['close', 'save'])
+const emit = defineEmits(['close', 'save', 'location-added'])
 
 const form = ref({
-  id: null,
-  name: "",
-  categoryId: "",
-  quantity: 1,
-  minQuantity: 1,
-  unit: "unite",
-  expirationDate: "",
-  locationId: "",
-  autoRefill: false
+  name: "", categoryId: "", locationId: "", quantity: 1, unit: "unite",
+  minQuantity: 0, autoRefill: false, expirationDate: ""
 })
 
-// Pré-remplit le formulaire si on est en mode édition, sinon le vide pour une création
+const isAddingLocation = ref(false)
+const newLocationName = ref("")
+
 watch(() => props.productToEdit, (newVal) => {
   if (newVal) {
-    form.value = {
-      id: newVal.id,
-      name: newVal.name,
-      categoryId: newVal.categoryId,
-      quantity: newVal.quantity,
-      minQuantity: newVal.minQuantity || 1,
-      unit: newVal.unit,
-      expirationDate: newVal.expirationDate && !String(newVal.expirationDate).startsWith('2099') 
-        ? new Date(newVal.expirationDate).toISOString().split('T')[0] 
-        : "",
-      locationId: newVal.locationId,
-      autoRefill: !!newVal.autoRefill
+    form.value = { ...newVal }
+    
+    if (form.value.unit === 'u' || form.value.unit === 'U') form.value.unit = 'unite'
+    if (form.value.minQuantity === null || form.value.minQuantity === undefined) form.value.minQuantity = 0
+
+    // SÉCURITÉ : Empêche un crash si la date en base de données est invalide
+    if (newVal.expirationDate && String(newVal.expirationDate).startsWith('2099')) {
+      form.value.expirationDate = ""
+    } else if (newVal.expirationDate) {
+      try {
+        form.value.expirationDate = new Date(newVal.expirationDate).toISOString().split('T')[0]
+      } catch (e) {
+        form.value.expirationDate = ""
+      }
     }
   } else {
-    form.value = { id: null, name: "", categoryId: "", quantity: 1, minQuantity: 1, unit: "unite", expirationDate: "", locationId: "", autoRefill: false }
+    form.value = { name: "", categoryId: "", locationId: "", quantity: 1, unit: "unite", minQuantity: 0, autoRefill: false, expirationDate: "" }
   }
+  isAddingLocation.value = false
+  newLocationName.value = ""
 }, { immediate: true })
 
 const submitForm = () => {
-  emit('save', { ...form.value })
+  // Validation 100% JS blindée
+  const nameVal = form.value.name ? String(form.value.name).trim() : ""
+  if (nameVal === "") {
+    alert("⚠️ Le nom du produit est obligatoire.")
+    return
+  }
+  if (!form.value.categoryId) {
+    alert("⚠️ Veuillez sélectionner une catégorie.")
+    return
+  }
+  if (!form.value.locationId) {
+    alert("⚠️ Veuillez sélectionner un emplacement.")
+    return
+  }
+  
+  const qty = parseFloat(form.value.quantity)
+  if (isNaN(qty) || qty < 0) {
+    alert("⚠️ La quantité est invalide.")
+    return
+  }
+
+  if (isAddingLocation.value) {
+    alert("⚠️ Veuillez valider (bouton vert ✓) ou annuler (bouton rouge ✗) la création du nouvel emplacement d'abord.")
+    return
+  }
+
+  emit('save', form.value)
+}
+
+const handleCreateLocation = async () => {
+  if (newLocationName.value.trim() === "") return
+  
+  const res = await window.api.config.createLocation({ name: newLocationName.value.trim() })
+  if (res?.success) {
+    emit('location-added') 
+    form.value.locationId = res.data.id 
+    isAddingLocation.value = false
+    newLocationName.value = ""
+  } else {
+    alert(`Erreur lors de la création : ${res?.message}`)
+  }
 }
 </script>
 
@@ -52,48 +91,53 @@ const submitForm = () => {
   <Transition name="fade">
     <div v-if="show" class="modal-overlay" @click.self="emit('close')">
       <div class="modal-container">
-        <button class="close-modal-btn" @click="emit('close')">
-          <span class="close-icon-shape"></span>
-        </button>
-
+        <button class="close-modal-btn" @click="emit('close')"><span class="close-icon-shape"></span></button>
         <header class="modal-header">
-          <div class="header-text">
-            <h2>{{ form.id ? 'Modifier le Produit' : 'Nouveau Produit' }}</h2>
-            <p>{{ form.id ? 'Mettez à jour les informations.' : 'Ajoutez un article à votre inventaire.' }}</p>
-          </div>
+          <h2>{{ productToEdit ? 'Modifier le produit' : 'Nouveau produit' }}</h2>
         </header>
-
-        <form @submit.prevent="submitForm" class="modal-form">
+        
+        <form class="modal-form" @submit.prevent="submitForm">
           <div class="form-group">
-            <label>NOM DU PRODUIT</label>
-            <input v-model="form.name" type="text" placeholder="ex: Jus de pomme" required>
+            <label>NOM DU PRODUIT *</label>
+            <input v-model="form.name" type="text" placeholder="Ex: Lait, Œufs...">
           </div>
 
           <div class="form-row">
             <div class="form-group">
-              <label>CATÉGORIE</label>
-              <select v-model="form.categoryId" required>
-                <option value="" disabled>Sélectionner...</option>
+              <label>CATÉGORIE *</label>
+              <select v-model="form.categoryId">
+                <option value="" disabled>-- Sélectionner --</option>
                 <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
               </select>
             </div>
+            
             <div class="form-group">
-              <label>EMPLACEMENT</label>
-              <select v-model="form.locationId" required>
-                <option value="" disabled>Sélectionner...</option>
-                <option v-for="loc in locations" :key="loc.id" :value="loc.id">{{ loc.name }}</option>
-              </select>
+              <label>EMPLACEMENT *</label>
+              
+              <div v-if="!isAddingLocation" style="display: flex; gap: 8px; align-items: center;">
+                <select v-model="form.locationId" style="flex: 1;">
+                  <option value="" disabled>-- Sélectionner --</option>
+                  <option v-for="loc in locations" :key="loc.id" :value="loc.id">{{ loc.name }}</option>
+                </select>
+                <button type="button" @click="isAddingLocation = true" class="action-btn-small purple" title="Créer un nouvel emplacement">+</button>
+              </div>
+              
+              <div v-else style="display: flex; gap: 6px; align-items: center;">
+                <input v-model="newLocationName" type="text" placeholder="Nom du lieu..." style="flex: 1;" @keydown.enter.prevent="handleCreateLocation">
+                <button type="button" @click="handleCreateLocation" class="action-btn-small green">✓</button>
+                <button type="button" @click="isAddingLocation = false" class="action-btn-small red">✗</button>
+              </div>
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
-              <label>QUANTITÉ ACTUELLE</label>
-              <input v-model="form.quantity" type="number" step="0.1" min="0" required>
+              <label>QUANTITÉ *</label>
+              <input v-model="form.quantity" type="number" step="0.1" min="0">
             </div>
             <div class="form-group">
-              <label>UNITÉ</label>
-              <select v-model="form.unit" required>
+              <label>UNITÉ *</label>
+              <select v-model="form.unit">
                 <option value="L">Litre (L)</option>
                 <option value="kg">Kilogramme (kg)</option>
                 <option value="ml">Millilitre (ml)</option>
@@ -105,29 +149,49 @@ const submitForm = () => {
 
           <div class="form-row">
             <div class="form-group">
-              <label>SEUIL D'ALERTE (Min)</label>
-              <input v-model="form.minQuantity" type="number" step="0.1" min="0" required>
+              <label>SEUIL D'ALERTE</label>
+              <input v-model="form.minQuantity" type="number" step="0.1" min="0">
             </div>
             <div class="form-group">
-              <label>DATE D'EXPIRATION (Optionnel)</label>
-              <input v-model="form.expirationDate" type="date">
+              <label>RÉASSORT AUTO</label>
+              <select v-model="form.autoRefill">
+                <option :value="true">Activé</option>
+                <option :value="false">Désactivé</option>
+              </select>
             </div>
           </div>
 
-          <div class="form-group" style="display: flex; align-items: center; gap: 10px; margin-top: 10px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px;">
-            <label class="switch" style="margin-bottom: 0;">
-              <input type="checkbox" v-model="form.autoRefill">
-              <span class="slider"></span>
-            </label>
-            <div>
-              <span style="font-weight: 600; font-size: 0.9rem; display: block; color: white;">Réassort Automatique</span>
-              <span style="font-size: 0.75rem; color: var(--text-muted);">Ajoute aux courses si le stock passe sous le seuil min.</span>
-            </div>
+          <div class="form-group">
+            <label>DATE D'EXPIRATION (Optionnel)</label>
+            <input v-model="form.expirationDate" type="date">
           </div>
-
-          <button type="submit" class="submit-btn">{{ form.id ? 'Mettre à jour' : 'Enregistrer' }}</button>
+          
+          <button type="submit" class="submit-btn">Enregistrer</button>
         </form>
       </div>
     </div>
   </Transition>
 </template>
+
+<style scoped>
+.action-btn-small {
+  border: none;
+  border-radius: 8px;
+  width: 42px;
+  height: 42px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: white;
+  transition: 0.2s;
+}
+.action-btn-small.purple { background: var(--primary-purple); }
+.action-btn-small.purple:hover { background: #6258ff; }
+.action-btn-small.green { background: rgba(0, 255, 163, 0.2); color: #00ffa3; }
+.action-btn-small.green:hover { background: rgba(0, 255, 163, 0.3); }
+.action-btn-small.red { background: rgba(255, 77, 77, 0.2); color: var(--accent-red); }
+.action-btn-small.red:hover { background: rgba(255, 77, 77, 0.3); }
+</style>
