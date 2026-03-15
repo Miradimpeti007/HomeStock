@@ -4,6 +4,7 @@ var _ConsumedHistories = require("./ConsumedHistories");
 var _Locations = require("./Locations");
 var _Products = require("./Products");
 var _ShoppingItems = require("./ShoppingItems");
+var _Settings = require("./Settings")
 
 function initModels(sequelize) {
   var Categories = _Categories(sequelize, DataTypes);
@@ -11,6 +12,8 @@ function initModels(sequelize) {
   var Locations = _Locations(sequelize, DataTypes);
   var Products = _Products(sequelize, DataTypes);
   var ShoppingItems = _ShoppingItems(sequelize, DataTypes);
+  var Settings = _Settings(sequelize, DataTypes);
+  
 
   ConsumedHistories.belongsTo(Categories, { as: "category", foreignKey: "categoryId"});
   Categories.hasMany(ConsumedHistories, { as: "ConsumedHistories", foreignKey: "categoryId"});
@@ -31,6 +34,7 @@ function initModels(sequelize) {
     Locations,
     Products,
     ShoppingItems,
+    Settings,
   };
 }
 module.exports = initModels;

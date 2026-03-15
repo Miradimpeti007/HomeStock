@@ -1,28 +1,23 @@
-/**
- * @module main
- * @description Point d'entrée principal du processus Electron.
- * Gère le cycle de vie de l'application et la communication IPC.
- */
-
 const { app, BrowserWindow } = require('electron');
 const path = require('path');
 const { registerAllIpc } = require('./ipc/index');
+const WatcherService = require('./services/watcher.service');
+const TrayService = require('./services/tray.service'); // Import du service Tray
 
-/**
- * @description Détermine si l'application tourne en mode développement.
- */
 const isDev = process.env.NODE_ENV === 'development';
-
 let mainWindow;
 
-/**
- * @description Initialise la fenêtre principale avec les paramètres de sécurité requis.
- */
+// Flag pour différencier la fermeture de la fenêtre du "Quitter" réel
+app.isQuitting = false;
+
 function createWindow() {
+
+    console.log('[SERVER] Création de la fenêtre principale...');
+    
     mainWindow = new BrowserWindow({
         width: 1200,
         height: 800,
-        show: false, // Empêche l'affichage avant que le contenu ne soit prêt
+        show: false,
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             nodeIntegration: false,
@@ -32,11 +27,6 @@ function createWindow() {
 
     mainWindow.maximize();
 
-    /**
-     * @description Logique de chargement conditionnelle.
-     * En développement : utilise le serveur HMR de Nuxt (Vite).
-     * En production : charge le build statique exporté.
-     */
     if (!isDev) {
         mainWindow.loadURL('http://localhost:3000');
         mainWindow.webContents.openDevTools();
@@ -45,33 +35,41 @@ function createWindow() {
         mainWindow.webContents.openDevTools();
     }
 
-    /**
-     * @description Affiche la fenêtre uniquement quand le moteur de rendu est prêt.
-     * Évite le flash blanc au démarrage de l'application.
-     */
     mainWindow.once('ready-to-show', () => {
         mainWindow.show();
     });
 
     /**
-     * @description Libère la référence de l'objet lors de la fermeture de la fenêtre.
+     * @description Intercepte la fermeture de la fenêtre.
+     * Si on n'est pas en train de quitter l'app, on cache juste la fenêtre.
      */
+    mainWindow.on('close', (event) => {
+        
+        if (!app.isQuitting) {
+            console.log('[SERVER] Tentative de fermeture interceptée : Masquage vers le Tray.');
+            event.preventDefault();
+            mainWindow.hide();
+        } else {
+            console.log('[SERVER] Fermeture réelle de la fenêtre.');
+        }
+        return false;
+    });
+
     mainWindow.on('closed', () => {
         mainWindow = null;
     });
 }
 
-/**
- * @description Cycle de vie : Initialisation de l'application.
- */
+app.setAppUserModelId("com.homestock.app");
+
 app.whenReady().then(() => {
     registerAllIpc();
     createWindow();
+    WatcherService.initScheduler();
+    
+    // Initialisation du Tray avec la référence de la fenêtre
+    TrayService.init(mainWindow);
 
-    /**
-     * @description Spécificité macOS : Recrée une fenêtre si l'icône du Dock est cliquée
-     * alors qu'aucune autre fenêtre n'est active.
-     */
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
             createWindow();
@@ -80,9 +78,13 @@ app.whenReady().then(() => {
 });
 
 /**
- * @description Cycle de vie : Fermeture de l'application.
- * Quitte l'application sur Windows et Linux, mais garde le processus actif sur macOS.
+ * @description Avant de quitter, on s'assure que le flag est à true.
  */
+app.on('before-quit', () => {
+    console.log('[SERVER] Préparation de la fermeture de l\'application...');
+    app.isQuitting = true;
+});
+
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
         app.quit();
