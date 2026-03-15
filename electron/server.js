@@ -8,7 +8,6 @@ const { app, BrowserWindow } = require('electron');
 const path = require('path');
 const { registerAllIpc } = require('./ipc/index');
 const WatcherService = require('./services/watcher.service');
-const { Notification } = require('electron');
 
 
 

@@ -151,6 +151,15 @@ contextBridge.exposeInMainWorld('api', {
          * @returns {Promise<Object>}
          */
         update: (settingData) => ipcRenderer.invoke('settings:update', settingData)
+    },
+
+    notifications: {
+        /**
+         * @description Envoie une notification personnalisée.
+         * @param {Object} data - Contient { les infos sur les produits en alerte}.
+         * @returns {Promise<Object>}
+         */
+        onOpenAlerts: (callback) => ipcRenderer.on('open-alerts-modal', (event, data) => callback(data))
     }
 
     

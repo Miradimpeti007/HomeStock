@@ -62,8 +62,7 @@ class WatcherService {
     return products.map(p => {
       const isExpired = new Date(p.expirationDate) <= today;
       const status = isExpired ? '🔴 PÉRIMÉ' : '🟠 Bientôt périmé';
-      const mention = p.autoRefill ? '(Ajouté aux courses)' : '(À faire manuellement)';
-      return `• ${p.name} : ${status} ${mention}`;
+      return `• ${p.name} : ${status} `;
     });
   }
 
@@ -89,8 +88,8 @@ class WatcherService {
    * Initialise le planificateur (toutes les 6 heures).
    */
   static initScheduler() {
-    // const SIX_HOURS = 6 * 60 * 60 * 1000;
-    const SIX_HOURS = 10 * 1000;
+    const SIX_HOURS = 6 * 60 * 60 * 1000;
+    //const SIX_HOURS = 60 * 1000;
 
     
 

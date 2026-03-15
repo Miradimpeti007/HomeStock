@@ -1,4 +1,5 @@
 const db =  require('../../config/dbConfig.js');
+const WatcherService = require('../services/watcher.service');
 const { Settings } = db;
 
 /**
@@ -49,6 +50,8 @@ async function updateSetting(_, { key, value }) {
 
         // We store everything as string in SQLite to maintain the Key-Value pattern
         await setting.update({ value: String(value) });
+
+        WatcherService.checkAll();
 
         return { success: true, data: { key, value } };
     } catch (error) {

@@ -25,7 +25,18 @@ class NotificationService {
 
     // Optionnel : Gérer le clic pour ramener la fenêtre au premier plan
     notification.on('click', () => {
-      // Logique pour focus la fenêtre principale ici si nécessaire
+      
+        const { BrowserWindow } = require('electron');
+        const win = BrowserWindow.getAllWindows()[0]; 
+
+        if (win) {
+            if (win.isMinimized()) win.restore();
+            win.focus();
+
+            
+            win.webContents.send('open-alerts-modal', body);
+            console.log('Notification cliquée, données envoyées au renderer :', body);
+        }
     });
   }
 }

@@ -93,6 +93,11 @@ async function deleteLocation(_, rawData) {
             return ResponseHandler.error(null, 'LOCATION_IN_USE', `Impossible de supprimer : ${productCount} produit(s) y sont encore stockés.`);
         }
 
+        const locationGenerique = await db.Locations.findOne({ where: { name: 'Non classé' } });
+        if (locationGenerique.id === id) {
+            return ResponseHandler.error(null, 'LOCATION_RESERVED', "Impossible de supprimer l'emplacement reservé 'Non classé'.");
+        }
+
         const deleted = await db.Locations.destroy({ where: { id } });
         return ResponseHandler.success({ id, deleted: !!deleted });
     } catch (err) {
