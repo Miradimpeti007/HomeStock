@@ -49,9 +49,27 @@ contextBridge.exposeInMainWorld('api', {
 
     config: {
         /**
-         * @description Récupère toutes les catégories (pour les menus déroulants).
+         * @description Récupère toutes les catégories disponibles.
          */
         getAllCategories: () => ipcRenderer.invoke('categories:getAll'),
+
+        /**
+         * @description Crée une nouvelle catégorie avec nom et couleur.
+         * @param {Object} categoryData - { name, color }
+         */
+        createCategory: (categoryData) => ipcRenderer.invoke('categories:create', categoryData),
+
+        /**
+         * @description Modifie une catégorie existante.
+         * @param {Object} categoryData - { id, name, color }
+         */
+        updateCategory: (categoryData) => ipcRenderer.invoke('categories:update', categoryData),
+
+        /**
+         * @description Supprime une catégorie si non utilisée et non protégée.
+         * @param {Object} idData - { id }
+         */
+        deleteCategory: (idData) => ipcRenderer.invoke('categories:delete', idData),
 
         /**
          * @description Récupère tous les lieux de stockage.
@@ -59,7 +77,7 @@ contextBridge.exposeInMainWorld('api', {
         getAllLocations: () => ipcRenderer.invoke('locations:getAll'),
 
         /**
-         * @description Ajoute un nouvel emplacement (ex: Garage, Cave).
+         * @description Ajoute un nouvel emplacement.
          */
         createLocation: (locationData) => ipcRenderer.invoke('locations:create', locationData),
 
@@ -69,7 +87,7 @@ contextBridge.exposeInMainWorld('api', {
         updateLocation: (locationData) => ipcRenderer.invoke('locations:update', locationData),
 
         /**
-         * @description Supprime un emplacement (si vide).
+         * @description Supprime un emplacement si vide et non protégé.
          */
         deleteLocation: (idData) => ipcRenderer.invoke('locations:delete', idData)
     },
