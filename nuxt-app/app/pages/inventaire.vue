@@ -1,19 +1,25 @@
 <script setup>
 import { ref, onMounted } from "vue"
+import { useRouter } from 'vue-router'
 import StockControl from '~/components/molecules/StockControl.vue'
 import PaginationControls from '~/components/molecules/PaginationControls.vue'
 import ProductModal from '~/components/organisms/ProductModal.vue'
+import AlertsModal from '~/components/organisms/AlertsModal.vue'
+
+const router = useRouter()
 
 const showModal = ref(false)
 const showFilters = ref(false) 
 const isLoading = ref(true)
-const productToEdit = ref(null)
+const productToEdit = ref(null) // Utilisé pour la modale
+
+const showAlertsModal = ref(false)
+const alertsContent = ref("")
 
 const products = ref([])
 const categories = ref([])
 const locations = ref([])
 
-// NOUVEAU : État de la recherche
 const searchQuery = ref("")
 
 const activeFilters = ref({
@@ -90,7 +96,6 @@ const fetchProducts = async (targetPage = 1) => {
       allFetchedItems.sort((a, b) => b.quantity - a.quantity)
     }
 
-    // NOUVEAU : Application de la recherche par nom
     if (searchQuery.value.trim() !== "") {
       const q = searchQuery.value.toLowerCase()
       allFetchedItems = allFetchedItems.filter(item => item.name && item.name.toLowerCase().includes(q))
@@ -119,7 +124,7 @@ const fetchProducts = async (targetPage = 1) => {
 
 const applyFilters = () => fetchProducts(1)
 const resetFilters = () => {
-  searchQuery.value = "" // Réinitialise aussi la recherche
+  searchQuery.value = "" 
   activeFilters.value = { categoryId: "", locationId: "", unit: "", autoRefill: "", status: "", sort: "expirationDate_ASC" }
   fetchProducts(1)
 }
@@ -132,22 +137,33 @@ const setLocationFilter = (locId) => {
 onMounted(async () => {
   await loadConfig()
   await fetchProducts(1)
+
+  if (window.api && window.api.notifications) {
+    window.api.notifications.onOpenAlerts((dataBody) => {
+      alertsContent.value = dataBody
+      router.push('/inventaire').then(() => {
+        showAlertsModal.value = true
+      })
+    })
+  }
 })
 
+// === GESTION DE LA MODALE POUR LA CRÉATION ===
 const openCreateModal = () => {
-  productToEdit.value = null
+  productToEdit.value = null // Mode Création
   showModal.value = true
 }
 
+// === GESTION DE LA MODALE POUR LA MODIFICATION ===
 const openEditModal = (product) => {
-  productToEdit.value = product
+  productToEdit.value = product // Mode Édition (La modale se remplit avec ces données)
   showModal.value = true
 }
 
 const handleSaveProduct = async (productData) => {
   try {
     const dataToSave = {
-      id: productData.id, 
+      id: productData.id, // Si on modifie, l'ID sera présent
       name: String(productData.name).trim(),
       categoryId: Number(productData.categoryId),
       locationId: Number(productData.locationId),
@@ -160,9 +176,9 @@ const handleSaveProduct = async (productData) => {
     
     let res;
     if (dataToSave.id) {
-      res = await window.api.products.update(dataToSave)
+      res = await window.api.products.update(dataToSave) // Mode modification
     } else {
-      res = await window.api.products.create(dataToSave)
+      res = await window.api.products.create(dataToSave) // Mode création
     }
 
     if (res?.success) {
@@ -314,6 +330,7 @@ const getExpirationText = (date) => {
         </div>
 
         <div v-for="p in products" :key="p.id" class="inventory-row">
+          
           <div class="col-desc item-detail">
             <div class="item-icon">📦</div> 
             <div class="item-text">
@@ -339,10 +356,12 @@ const getExpirationText = (date) => {
               <span class="status-dot"></span><span class="exp-label">{{ getExpirationText(p.expirationDate) }}</span>
             </div>
           </div>
+          
           <div class="col-actions" style="display: flex; gap: 5px;">
-            <button class="action-btn" @click="openEditModal(p)">✏️</button>
-            <button class="action-btn delete" @click="handleDelete(p.id)">🗑️</button>
+            <button class="action-btn edit-btn" @click="openEditModal(p)" title="Modifier">✏️</button>
+            <button class="action-btn delete" @click="handleDelete(p.id)" title="Supprimer">🗑️</button>
           </div>
+
         </div>
 
         <div v-if="!isLoading && products.length === 0" class="inventory-row">
@@ -365,101 +384,36 @@ const getExpirationText = (date) => {
     @close="showModal = false" 
     @save="handleSaveProduct" 
     @location-added="loadConfig"
+    @category-added="loadConfig" 
+  />
+
+  <AlertsModal 
+    :show="showAlertsModal" 
+    :alertsText="alertsContent" 
+    @close="showAlertsModal = false" 
   />
 </template>
 
 <style scoped>
 .top-controls {
-  display: flex;
-  flex-wrap: wrap; 
-  align-items: center;
-  justify-content: space-between; 
-  gap: 20px;
-  margin-bottom: 1.5rem;
-  width: 100%;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 1.5rem; width: 100%;
 }
-
-.categories-slider {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  flex-grow: 1;
-  padding-bottom: 5px;
-  max-width: 100%;
-}
+.categories-slider { display: flex; gap: 10px; overflow-x: auto; flex-grow: 1; padding-bottom: 5px; max-width: 100%; }
 .categories-slider::-webkit-scrollbar { height: 6px; }
 .categories-slider::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 10px; }
 .categories-slider::-webkit-scrollbar-track { background: transparent; }
 
-.action-controls {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  flex-shrink: 0;
-  flex-wrap: wrap; /* Permet à la recherche de s'adapter sur petit écran */
-}
+.action-controls { display: flex; align-items: center; gap: 15px; flex-shrink: 0; flex-wrap: wrap; }
+.search-wrapper { position: relative; min-width: 220px; }
+.search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+.search-input { width: 100%; background: var(--bg-dark); border: 1px solid var(--card-border); color: white; padding: 10px 16px 10px 40px; border-radius: 10px; font-size: 0.9rem; outline: none; transition: 0.2s; box-sizing: border-box; }
+.search-input:focus { border-color: var(--primary-purple); }
 
-/* NOUVEAU CSS : Recherche */
-.search-wrapper {
-  position: relative;
-  min-width: 220px;
-}
-.search-icon {
-  position: absolute;
-  left: 14px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--text-muted);
-  pointer-events: none;
-}
-.search-input {
-  width: 100%;
-  background: var(--bg-dark);
-  border: 1px solid var(--card-border);
-  color: white;
-  padding: 10px 16px 10px 40px; 
-  border-radius: 10px;
-  font-size: 0.9rem;
-  outline: none;
-  transition: 0.2s;
-  box-sizing: border-box;
-}
-.search-input:focus {
-  border-color: var(--primary-purple);
-}
-
-.sort-select {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  color: white;
-  padding: 10px 16px;
-  border-radius: 10px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  appearance: none;
-  min-width: 200px;
-  outline: none;
-  transition: 0.2s;
-}
+.sort-select { background: var(--card-bg); border: 1px solid var(--card-border); color: white; padding: 10px 16px; border-radius: 10px; cursor: pointer; font-size: 0.9rem; appearance: none; min-width: 200px; outline: none; transition: 0.2s; }
 .sort-select:focus { border-color: var(--primary-purple); }
 
-.btn-icon {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  color: white;
-  padding: 10px 16px;
-  border-radius: 10px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: 0.2s;
-  white-space: nowrap;
-}
-.btn-icon:hover, .btn-icon.active {
-  background: rgba(108, 93, 255, 0.1);
-  border-color: var(--primary-purple);
-}
+.btn-icon { background: var(--card-bg); border: 1px solid var(--card-border); color: white; padding: 10px 16px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: 0.2s; white-space: nowrap; }
+.btn-icon:hover, .btn-icon.active { background: rgba(108, 93, 255, 0.1); border-color: var(--primary-purple); }
 
 .advanced-filters-panel { background: rgba(255, 255, 255, 0.02); border: 1px solid var(--card-border); border-radius: 16px; padding: 1.5rem; margin-bottom: 2rem; }
 .filters-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem; }

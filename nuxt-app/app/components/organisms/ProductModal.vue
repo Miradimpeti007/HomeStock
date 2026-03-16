@@ -8,7 +8,8 @@ const props = defineProps({
   productToEdit: Object
 })
 
-const emit = defineEmits(['close', 'save', 'location-added'])
+// Ajout de l'événement 'category-added'
+const emit = defineEmits(['close', 'save', 'location-added', 'category-added'])
 
 const form = ref({
   name: "", categoryId: "", locationId: "", quantity: 1, unit: "unite",
@@ -17,6 +18,10 @@ const form = ref({
 
 const isAddingLocation = ref(false)
 const newLocationName = ref("")
+
+// États pour la création de catégorie
+const isAddingCategory = ref(false)
+const newCategoryName = ref("")
 
 watch(() => props.productToEdit, (newVal) => {
   if (newVal) {
@@ -40,10 +45,11 @@ watch(() => props.productToEdit, (newVal) => {
   }
   isAddingLocation.value = false
   newLocationName.value = ""
+  isAddingCategory.value = false
+  newCategoryName.value = ""
 }, { immediate: true })
 
 const submitForm = () => {
-  // Validation 100% JS blindée
   const nameVal = form.value.name ? String(form.value.name).trim() : ""
   if (nameVal === "") {
     alert("⚠️ Le nom du produit est obligatoire.")
@@ -68,6 +74,11 @@ const submitForm = () => {
     alert("⚠️ Veuillez valider (bouton vert ✓) ou annuler (bouton rouge ✗) la création du nouvel emplacement d'abord.")
     return
   }
+  
+  if (isAddingCategory.value) {
+    alert("⚠️ Veuillez valider (bouton vert ✓) ou annuler (bouton rouge ✗) la création de la nouvelle catégorie d'abord.")
+    return
+  }
 
   emit('save', form.value)
 }
@@ -75,12 +86,36 @@ const submitForm = () => {
 const handleCreateLocation = async () => {
   if (newLocationName.value.trim() === "") return
   
+  // Utilisation de la méthode déclarée dans preload.js
   const res = await window.api.config.createLocation({ name: newLocationName.value.trim() })
   if (res?.success) {
     emit('location-added') 
     form.value.locationId = res.data.id 
     isAddingLocation.value = false
     newLocationName.value = ""
+  } else {
+    alert(`Erreur lors de la création : ${res?.message}`)
+  }
+}
+
+const handleCreateCategory = async () => {
+  if (newCategoryName.value.trim() === "") return
+  
+  // Génération d'une couleur HEX valide pour satisfaire le categoryMapping du backend
+  const niceColors = ['#ff7675', '#74b9ff', '#55efc4', '#00b894', '#fdcb6e', '#ffeaa7', '#fab1a0', '#fd79a8', '#a29bfe', '#e17055']
+  const randomColor = niceColors[Math.floor(Math.random() * niceColors.length)]
+
+  // Utilisation de la méthode déclarée dans preload.js
+  const res = await window.api.config.createCategory({ 
+    name: newCategoryName.value.trim(),
+    color: randomColor
+  })
+  
+  if (res?.success) {
+    emit('category-added') 
+    form.value.categoryId = res.data.id 
+    isAddingCategory.value = false
+    newCategoryName.value = ""
   } else {
     alert(`Erreur lors de la création : ${res?.message}`)
   }
@@ -105,10 +140,20 @@ const handleCreateLocation = async () => {
           <div class="form-row">
             <div class="form-group">
               <label>CATÉGORIE *</label>
-              <select v-model="form.categoryId">
-                <option value="" disabled>-- Sélectionner --</option>
-                <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
-              </select>
+              
+              <div v-if="!isAddingCategory" style="display: flex; gap: 8px; align-items: center;">
+                <select v-model="form.categoryId" style="flex: 1;">
+                  <option value="" disabled>-- Sélectionner --</option>
+                  <option v-for="cat in categories" :key="cat.id" :value="cat.id">{{ cat.name }}</option>
+                </select>
+                <button type="button" @click="isAddingCategory = true" class="action-btn-small purple" title="Créer une nouvelle catégorie">+</button>
+              </div>
+              
+              <div v-else style="display: flex; gap: 6px; align-items: center;">
+                <input v-model="newCategoryName" type="text" placeholder="Nom de la catégorie..." style="flex: 1;" @keydown.enter.prevent="handleCreateCategory">
+                <button type="button" @click="handleCreateCategory" class="action-btn-small green">✓</button>
+                <button type="button" @click="isAddingCategory = false" class="action-btn-small red">✗</button>
+              </div>
             </div>
             
             <div class="form-group">
@@ -166,7 +211,7 @@ const handleCreateLocation = async () => {
             <input v-model="form.expirationDate" type="date">
           </div>
           
-          <button type="submit" class="submit-btn">Enregistrer</button>
+          <button type="button" class="submit-btn" @click="submitForm">Enregistrer</button>
         </form>
       </div>
     </div>

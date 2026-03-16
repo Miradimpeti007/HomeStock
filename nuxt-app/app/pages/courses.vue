@@ -238,11 +238,12 @@ const handleSaveProduct = async (productData) => {
     </div>
 
     <ShoppingModal 
-      :show="showModal" 
-      :categories="categories" 
-      @close="showModal = false" 
-      @save="handleSaveItem" 
-    />
+  :show="showModal" 
+  :categories="categories" 
+  @close="showModal = false" 
+  @save="handleSaveItem"
+  @category-added="loadConfig" 
+/>
 
     <ValidationSummaryModal
       :show="showSummaryModal"

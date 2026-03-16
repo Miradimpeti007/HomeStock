@@ -35,7 +35,6 @@ class NotificationService {
 
             
             win.webContents.send('open-alerts-modal', body);
-            console.log('Notification cliquée, données envoyées au renderer :', body);
         }
     });
   }

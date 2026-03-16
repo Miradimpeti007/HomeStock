@@ -1,11 +1,16 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import AlertsModal from '~/components/organisms/AlertsModal.vue'
 
 const route = useRoute()
+const router = useRouter()
 const shoppingCount = ref(0)
 
-// La fonction qui appelle ta méthode getShoppingList via le preload
+// États pour stocker les données du 'body' et gérer l'affichage de la modale
+const showAlertsModal = ref(false)
+const alertsContent = ref("")
+
 const fetchShoppingCount = async () => {
   try {
     const res = await window.api.shopping.getList({ isCompleted: false })
@@ -17,12 +22,31 @@ const fetchShoppingCount = async () => {
   }
 }
 
-// Premier chargement
 onMounted(() => {
   fetchShoppingCount()
+
+  // LA CONNEXION AVEC LE PRELOAD : 
+  // On écoute le signal provenant de win.webContents.send('open-alerts-modal', body)
+  if (window.api && window.api.notifications) {
+    window.api.notifications.onOpenAlerts((bodyData) => {
+      
+      // 1. On injecte les données reçues (le body) dans notre variable
+      alertsContent.value = bodyData
+      
+      // 2. On vérifie si on est déjà sur la page inventaire
+      if (route.path !== '/inventaire') {
+        // Redirection vers l'inventaire puis ouverture de la modale
+        router.push('/inventaire').then(() => {
+          showAlertsModal.value = true
+        })
+      } else {
+        // Si on y est déjà, on se contente d'ouvrir la modale
+        showAlertsModal.value = true
+      }
+    })
+  }
 })
 
-// Mise à jour automatique quand tu navigues entre les pages
 watch(() => route.path, () => {
   fetchShoppingCount()
 })
@@ -81,5 +105,11 @@ watch(() => route.path, () => {
     </aside>
 
     <slot />
+
+    <AlertsModal 
+      :show="showAlertsModal" 
+      :alertsText="alertsContent" 
+      @close="showAlertsModal = false" 
+    />
   </div>
 </template>
