@@ -65,5 +65,129 @@ L'application suit une architecture **MVC** stricte avec **Design Atomique** :
 - **View** : Nuxt.js 4 + Vue 3 (atoms/molecules/organisms)
 - **Controller** : Node.js + IPC Electron (handlers + services)
 
-### Diagramme de séquence — Cycle de vie d'un produit
-```mermaid
+
+---
+
+## 🛠 Stack Technique
+
+| Couche | Technologie |
+|--------|-------------|
+| **Desktop** | Electron 40 |
+| **Frontend** | Nuxt.js 4, Vue 3 |
+| **State Management** | Pinia |
+| **Validation** | VeeValidate |
+| **Backend** | Node.js, Sequelize ORM |
+| **Base de données** | SQLite |
+| **Notifications** | Electron native notifications |
+| **System Tray** | Electron Tray API |
+| **Versionning** | Git, GitHub |
+| **Design** | Figma |
+
+---
+
+## 📸 Démonstration
+
+| Tableau de bord | Liste de courses |
+| :---: | :---: |
+| ![Dashboard](assets/dashboard.png) | ![Courses](assets/courses.png) |
+
+| Inventaire | Historique |
+| :---: | :---: |
+| ![Inventaire](assets/inventaire.png) | ![Historique](assets/historique.png) |
+
+---
+
+## 🚀 Installation & Lancement
+
+### Prérequis
+- Node.js v18+
+- npm
+
+### 1. Cloner le dépôt
+```bash
+git clone https://github.com/Miradimpeti007/HomeStock.git
+cd HomeStock
+```
+
+### 2. Installer les dépendances backend & Electron
+```bash
+npm install
+```
+
+### 3. Installer les dépendances frontend
+```bash
+cd nuxt-app
+npm install
+cd ..
+```
+
+### 4. Initialiser la base de données
+```bash
+node scripts/init_db.js
+node scripts/seedDb.js
+```
+
+### 5. Lancer l'application Electron (desktop)
+```bash
+npm start
+```
+
+### 6. Lancer uniquement le frontend (développement)
+```bash
+cd nuxt-app
+npm run dev
+```
+
+---
+
+## 🤖 Section IA & Méthodologie
+
+### 1. Prompts Utilisés
+- "Crée un schéma de base de données SQLite pour une app de gestion de stock avec Sequelize" → Structure des modèles
+- "Comment implémenter un System Tray avec Electron ?" → tray.service.js
+- "Comment faire communiquer Nuxt.js avec Electron via IPC ?" → Architecture IPC
+- "Génère un composant Vue avec une barre de progression dynamique" → Composant liste de courses
+- "Comment créer un watcher qui surveille des données en arrière-plan avec Electron ?" → watcher.service.js
+
+### 2. Modifications Manuelles & Debug
+- L'IA suggérait d'utiliser localStorage — remplacé par Pinia + IPC Electron
+- Le code généré pour les migrations Sequelize utilisait une syntaxe dépréciée — corrigé manuellement
+- Les règles métier ont été entièrement codées manuellement
+- De nombreux bugs de synchronisation ont nécessité une refonte complète du projet
+
+### 3. Répartition Code IA vs Code Humain
+
+| Partie | IA | Humain |
+|--------|-----|--------|
+| Boilerplate / Config | 70% | 30% |
+| Modèles BDD & Migrations | 30% | 70% |
+| Logique Métier | 0% | 100% |
+| Interface (UI/UX) | 40% | 60% |
+| Architecture IPC + Services Electron | 20% | 80% |
+
+---
+
+## ⚖️ Auto-Évaluation
+
+**Ce qui fonctionne bien :**
+- Interface dark mode moderne et cohérente
+- Logique métier complète (Auto-Refill, alertes péremption, historique)
+- Fonctionnalités desktop natives (System Tray, notifications, watcher)
+- Design Atomique bien structuré (molecules/organisms)
+
+**Difficultés rencontrées :**
+- Gestion des conflits Git lors du travail en équipe
+- Intégration Electron + Nuxt.js (communication IPC complexe)
+- Bugs de synchronisation qui ont nécessité de repartir de zéro
+
+**Si c'était à refaire :**
+- Définir l'architecture IPC avant de commencer le frontend
+- Utiliser Pinia dès le début
+- Faire des Pull Requests systématiques
+- Mieux répartir les tâches dès le départ
+
+---
+
+## 📄 Licence
+
+MIT License — Libre d'utilisation et de modification.
