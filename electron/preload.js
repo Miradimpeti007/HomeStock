@@ -49,9 +49,27 @@ contextBridge.exposeInMainWorld('api', {
 
     config: {
         /**
-         * @description Récupère toutes les catégories (pour les menus déroulants).
+         * @description Récupère toutes les catégories disponibles.
          */
         getAllCategories: () => ipcRenderer.invoke('categories:getAll'),
+
+        /**
+         * @description Crée une nouvelle catégorie avec nom et couleur.
+         * @param {Object} categoryData - { name, color }
+         */
+        createCategory: (categoryData) => ipcRenderer.invoke('categories:create', categoryData),
+
+        /**
+         * @description Modifie une catégorie existante.
+         * @param {Object} categoryData - { id, name, color }
+         */
+        updateCategory: (categoryData) => ipcRenderer.invoke('categories:update', categoryData),
+
+        /**
+         * @description Supprime une catégorie si non utilisée et non protégée.
+         * @param {Object} idData - { id }
+         */
+        deleteCategory: (idData) => ipcRenderer.invoke('categories:delete', idData),
 
         /**
          * @description Récupère tous les lieux de stockage.
@@ -59,7 +77,7 @@ contextBridge.exposeInMainWorld('api', {
         getAllLocations: () => ipcRenderer.invoke('locations:getAll'),
 
         /**
-         * @description Ajoute un nouvel emplacement (ex: Garage, Cave).
+         * @description Ajoute un nouvel emplacement.
          */
         createLocation: (locationData) => ipcRenderer.invoke('locations:create', locationData),
 
@@ -69,8 +87,98 @@ contextBridge.exposeInMainWorld('api', {
         updateLocation: (locationData) => ipcRenderer.invoke('locations:update', locationData),
 
         /**
-         * @description Supprime un emplacement (si vide).
+         * @description Supprime un emplacement si vide et non protégé.
          */
         deleteLocation: (idData) => ipcRenderer.invoke('locations:delete', idData)
+    },
+
+    history: {
+        /**
+         * @description Récupère l'historique de consommation avec filtres et pagination.
+         * @param {Object} filters - Filtres (wasThrownAway, categoryId, locationId, date).
+         * @returns {Promise<Object>}
+         */
+        getAll: (filters) => ipcRenderer.invoke('history:getAll', filters),
+
+        /**
+         * @description Supprime une entrée spécifique de l'historique.
+         * @param {Object} idData - Contient l'ID de l'entrée à supprimer.
+         * @returns {Promise<Object>}
+         */
+        deleteItem: (idData) => ipcRenderer.invoke('history:deleteItem', idData),
+
+        /**
+         * @description Efface l'intégralité de l'historique de consommation.
+         * @returns {Promise<Object>}
+         */
+        clear: () => ipcRenderer.invoke('history:clear')
+    },
+
+    shopping: {
+        /**
+         * Récupère les articles de la liste.
+         * @param {Object} filters - Exemple: { isCompleted: false }
+         */
+        getList: (filters) => ipcRenderer.invoke('shopping:get-list', filters),
+
+        /**
+         * Ajoute un article à la liste.
+         * @param {Object} itemData - { name, quantity, unit, linkedProductId }
+         */
+        add: (itemData) => ipcRenderer.invoke('shopping:add-item', itemData),
+
+        /**
+         * Modifie la quantité d'un article.
+         * @param {number} id - ID de l'article dans ShoppingItems
+         * @param {number} quantity - Nouvelle valeur numérique
+         */
+        updateQty: (id, quantity) => ipcRenderer.invoke('shopping:update-qty', { id, quantity }),
+
+        /**
+         * Alterne l'état de complétion d'un article.
+         */
+        toggleCompletion: (id) => ipcRenderer.invoke('shopping:toggle-completion', { id }),
+
+        /**
+         * Supprime un article de la liste.
+         */
+        delete: (id) => ipcRenderer.invoke('shopping:delete-item', { id }),
+
+        /**
+         * Supprime tous les articles de la liste.
+         */
+        clearAll: () => ipcRenderer.invoke('shopping:clear-all'),
+
+        /**
+         * Valide les articles sélectionnés pour les transférer dans l'inventaire.
+         * @param {Array<number>} itemIds - Liste des IDs à traiter
+         */
+        validateCart: (itemIds) => ipcRenderer.invoke('shopping:validate-cart', { itemIds })
+    },
+
+    settings: {
+        /**
+         * @description Récupère tous les réglages sous forme d'objet { cle: valeur }.
+         * @returns {Promise<Object>}
+         */
+        getAll: () => ipcRenderer.invoke('settings:get-all'),
+
+        /**
+         * @description Met à jour un réglage spécifique.
+         * @param {Object} settingData - Contient { key, value }.
+         * @returns {Promise<Object>}
+         */
+        update: (settingData) => ipcRenderer.invoke('settings:update', settingData)
+    },
+
+    notifications: {
+        /**
+         * @description Envoie une notification personnalisée.
+         * @param {Object} data - Contient { les infos sur les produits en alerte}.
+         * @returns {Promise<Object>}
+         */
+        onOpenAlerts: (callback) => ipcRenderer.on('open-alerts-modal', (event, data) => callback(data))
     }
+
+    
 });
