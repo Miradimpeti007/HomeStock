@@ -95,6 +95,10 @@ L'application suit une architecture **MVC** stricte avec **Design Atomique** :
 | :---: | :---: |
 | ![Inventaire](assets/inventaire.png) | ![Historique](assets/historique.png) |
 
+| Configuration | |
+| :---: | :---: |
+| ![Configuration](assets/configuration.png) | |
+
 ---
 
 ## 🚀 Installation & Lancement
